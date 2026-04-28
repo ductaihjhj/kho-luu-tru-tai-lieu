@@ -1363,6 +1363,7 @@ export const EmptyState = ({ searchQuery }) => (
 // ============================================================
 export const UploadModal = ({ open, onClose, onSuccess, defaultCategory }) => {
   const [dragging, setDragging] = React.useState(false);
+  const [fileName, setFileName] = React.useState(null);
   const [selectedFile, setSelectedFile] = React.useState(null);
   const [uploading, setUploading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
