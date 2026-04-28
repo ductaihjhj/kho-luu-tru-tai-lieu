@@ -1,5 +1,5 @@
 import React from "react";
-
+import { getResourcePreviewMeta } from "../utils/resourcePreview";
 // ============================================================
 // MOCK DATA
 // ============================================================
@@ -1066,17 +1066,137 @@ export const CategoryCard = ({ card, onUpload }) => {
 // ============================================================
 // RESOURCE CARD COMPONENT
 // ============================================================
+const ResourcePreview = ({ resource }) => {
+  const preview = getResourcePreviewMeta(resource);
+
+  const fallback = (
+    <div
+      className={cn(
+        "flex h-full w-full items-center justify-center",
+        `bg-gradient-to-br ${resource.color || "from-purple-200 to-pink-300"}`
+      )}
+    >
+      <span className="text-5xl">{resource.emoji || "📁"}</span>
+    </div>
+  );
+
+  if (
+    preview.kind === "thumbnail" ||
+    preview.kind === "image" ||
+    preview.kind === "drive-image"
+  ) {
+    return (
+      <div className="relative h-full w-full bg-purple-50">
+        <img
+          src={preview.previewUrl}
+          alt={resource.title || "Ảnh xem trước"}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
+      </div>
+    );
+  }
+
+  if (preview.kind === "video") {
+    return (
+      <div className="relative h-full w-full bg-black">
+        <video
+          src={preview.previewUrl}
+          className="h-full w-full object-cover"
+          muted
+          playsInline
+          preload="metadata"
+        />
+
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-xl shadow-lg">
+            ▶️
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (preview.kind === "drive-video") {
+    return (
+      <div className="relative h-full w-full bg-black">
+        <img
+          src={preview.previewUrl}
+          alt={resource.title || "Video xem trước"}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-xl shadow-lg">
+            ▶️
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (preview.kind === "drive-document" || preview.kind === "drive-file") {
+    return (
+      <div className="relative h-full w-full bg-slate-100">
+        <img
+          src={preview.previewUrl}
+          alt={resource.title || "Tài liệu xem trước"}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+
+        <div className="absolute inset-0 flex items-center justify-center bg-white/10">
+          <div className="rounded-2xl bg-white/85 px-3 py-2 text-center text-xs font-black text-slate-600 shadow-md">
+            📄 Tài liệu
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (preview.kind === "drive-audio" || preview.kind === "audio") {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100">
+        <div className="mb-2 text-5xl">🎵</div>
+        <div className="max-w-[80%] truncate rounded-full bg-white/75 px-3 py-1 text-xs font-black text-purple-500 shadow-sm">
+          Âm thanh
+        </div>
+      </div>
+    );
+  }
+
+  if (preview.kind === "document") {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-purple-50">
+        <div className="mb-2 text-5xl">📄</div>
+        <div className="max-w-[80%] rounded-full bg-white/80 px-3 py-1 text-center text-xs font-black text-slate-600 shadow-sm line-clamp-1">
+          {resource.fileName || "Tài liệu"}
+        </div>
+      </div>
+    );
+  }
+
+  return fallback;
+};
+
 export const ResourceCard = ({ resource, viewMode = "grid" }) => {
   if (viewMode === "list") {
     return (
       <div className="card-hover flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm border border-purple-50">
-        <div
-          className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0",
-            `bg-gradient-to-br ${resource.color}`,
-          )}
-        >
-          {resource.emoji}
+        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl bg-purple-100">
+          <ResourcePreview resource={resource} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -1084,29 +1204,48 @@ export const ResourceCard = ({ resource, viewMode = "grid" }) => {
             <span
               className={cn(
                 "text-xs font-bold px-2.5 py-0.5 rounded-full",
-                TYPE_COLORS[resource.type],
+                TYPE_COLORS[resource.type] || "bg-purple-100 text-purple-700"
               )}
             >
-              {TYPE_ICONS[resource.type]} {resource.typeLabel}
+              {TYPE_ICONS[resource.type] || "📄"}{" "}
+              {resource.typeLabel || "Tài liệu"}
             </span>
-            <span className="text-xs text-gray-400">{resource.updatedAt}</span>
+
+            <span className="text-xs text-gray-400">
+              {resource.updatedAt || "Vừa xong"}
+            </span>
           </div>
 
           <h4 className="font-bold text-gray-800 mt-1 text-sm truncate">
-            {resource.title}
+            {resource.title || "Tài liệu chưa có tiêu đề"}
           </h4>
+
           <p className="text-xs text-gray-500 truncate">
-            {resource.description}
+            {resource.description || "Chưa có mô tả."}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-200 btn-bounce transition-all">
+          <a
+            href={resource.fileUrl || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-200 btn-bounce transition-all"
+            title="Xem tài liệu"
+          >
             <i className="fas fa-eye text-xs"></i>
-          </button>
-          <button className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all">
+          </a>
+
+          <a
+            href={resource.fileUrl || "#"}
+            target="_blank"
+            rel="noreferrer"
+            download
+            className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0"
+            title="Tải xuống"
+          >
             <i className="fas fa-download text-xs"></i>
-          </button>
+          </a>
         </div>
       </div>
     );
@@ -1114,16 +1253,11 @@ export const ResourceCard = ({ resource, viewMode = "grid" }) => {
 
   return (
     <div className="card-hover resource-card rounded-3xl overflow-hidden bg-white shadow-sm border border-purple-50 flex flex-col">
-      <div
-  className={cn(
-    "resource-card-preview relative flex items-center justify-center",
-    `bg-gradient-to-br ${resource.color}`
-  )}
->
-        <span className="text-5xl">{resource.emoji}</span>
+      <div className="resource-card-preview relative h-32 overflow-hidden">
+        <ResourcePreview resource={resource} />
 
         <div className="absolute top-2 right-2">
-          <FlowerSVG color="rgba(255,255,255,0.5)" size={18} />
+          <FlowerSVG color="rgba(255,255,255,0.7)" size={18} />
         </div>
 
         <div className="absolute bottom-2 left-2">
@@ -1132,47 +1266,60 @@ export const ResourceCard = ({ resource, viewMode = "grid" }) => {
 
         <div
           className={cn(
-            "absolute top-2 left-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm",
-            TYPE_COLORS[resource.type],
+            "absolute top-2 left-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm bg-white/90 backdrop-blur",
+            TYPE_COLORS[resource.type] || "text-purple-700"
           )}
         >
-          {TYPE_ICONS[resource.type]} {resource.typeLabel}
+          {TYPE_ICONS[resource.type] || "📄"}{" "}
+          {resource.typeLabel || "Tài liệu"}
         </div>
       </div>
 
       <div className="p-4 flex flex-col gap-2 flex-1">
         <h4
-          className="font-black text-gray-800 text-sm leading-tight"
+          className="font-black text-gray-800 text-sm leading-tight line-clamp-2"
           style={{ fontFamily: "'Baloo 2', cursive" }}
         >
-          {resource.title}
+          {resource.title || "Tài liệu chưa có tiêu đề"}
         </h4>
 
         <p className="text-xs text-gray-500 line-clamp-2 flex-1">
-          {resource.description}
+          {resource.description || "Chưa có mô tả."}
         </p>
 
         <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
           <span className="flex items-center gap-1">
             <i className="fas fa-clock text-purple-300"></i>
-            {resource.updatedAt}
+            {resource.updatedAt || "Vừa xong"}
           </span>
 
           <span className="flex items-center gap-1">
             <i className="fas fa-eye text-sky-300"></i>
-            {resource.views}
+            {resource.views || 0}
           </span>
         </div>
 
         <div className="flex gap-2 mt-1">
-          <button className="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-400 to-pink-400 text-white text-xs font-bold btn-bounce shadow-sm flex items-center justify-center gap-1">
+          <a
+            href={resource.fileUrl || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-400 to-pink-400 text-white text-xs font-bold btn-bounce shadow-sm flex items-center justify-center gap-1"
+          >
             <i className="fas fa-eye text-xs"></i>
             Xem chi tiết
-          </button>
+          </a>
 
-          <button className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0">
+          <a
+            href={resource.fileUrl || "#"}
+            target="_blank"
+            rel="noreferrer"
+            download
+            className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0"
+            title="Tải xuống"
+          >
             <i className="fas fa-download text-xs"></i>
-          </button>
+          </a>
         </div>
       </div>
     </div>
@@ -1216,7 +1363,7 @@ export const EmptyState = ({ searchQuery }) => (
 // ============================================================
 export const UploadModal = ({ open, onClose, onSuccess, defaultCategory }) => {
   const [dragging, setDragging] = React.useState(false);
-  const [fileName, setFileName] = React.useState(null);
+  const [selectedFile, setSelectedFile] = React.useState(null);
   const [uploading, setUploading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [category, setCategory] = React.useState(
@@ -1230,51 +1377,47 @@ export const UploadModal = ({ open, onClose, onSuccess, defaultCategory }) => {
   }, [defaultCategory]);
 
   const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
+  e.preventDefault();
+  setDragging(false);
 
-    const file = e.dataTransfer.files[0];
-    if (file) setFileName(file.name);
-  };
+  const file = e.dataTransfer.files[0];
+
+  if (file) {
+    setSelectedFile(file);
+    setFileName(file.name);
+  }
+};
 
   const handleFile = (e) => {
-    const file = e.target.files[0];
-    if (file) setFileName(file.name);
-  };
+  const file = e.target.files[0];
+
+  if (file) {
+    setSelectedFile(file);
+    setFileName(file.name);
+  }
+};
 
   const handleUpload = () => {
-    if (!fileName && !title) return;
+  if (!selectedFile && !title) return;
 
-    setUploading(true);
+  setUploading(true);
+  setProgress(0);
 
-    let p = 0;
-    const iv = setInterval(() => {
-      p += Math.random() * 25;
+  onSuccess("Đang tải tài liệu lên...", {
+    title,
+    category,
+    file: selectedFile,
+    fileName: selectedFile?.name || fileName,
+    size: selectedFile ? `${Math.round(selectedFile.size / 1024)} KB` : "Mới tải",
+  });
 
-      if (p >= 100) {
-        p = 100;
-        clearInterval(iv);
-
-        setTimeout(() => {
-          setUploading(false);
-          setProgress(0);
-          setFileName(null);
-          setTitle("");
-
-          onSuccess("Tài liệu đã được tải lên thành công!", {
-            title,
-            category,
-            fileName,
-            size: fileName ? "Mới tải" : "Đang xử lý",
-          });
-
-          onClose();
-        }, 400);
-      }
-
-      setProgress(p);
-    }, 300);
-  };
+  setUploading(false);
+  setProgress(0);
+  setSelectedFile(null);
+  setFileName(null);
+  setTitle("");
+  onClose();
+};
 
   if (!open) return null;
 

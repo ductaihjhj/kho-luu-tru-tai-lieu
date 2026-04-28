@@ -1,0 +1,282 @@
+export const defaultAppData = {
+  siteConfig: {
+    schoolName: "Nhật Ký Diễn Viên Nhí Số",
+    className: "Lớp Hoa Mai",
+    schoolYear: "Năm học 2024-2025",
+
+    parentName: "Mẹ Bảo Linh",
+    parentRole: "Phụ huynh",
+    parentEmoji: "👩",
+
+    classCardTitle: "Lớp Hoa Mai",
+    classCardSubtitle: "Năm học 2024-2025",
+    classIcon: "🌸",
+
+    activeChildId: "bao-linh",
+  },
+
+  children: [
+    {
+      id: "bao-linh",
+      name: "Bảo Linh",
+      nickname: "Bé Bảo Linh",
+      avatarEmoji: "⭐",
+      parentName: "Mẹ Bảo Linh",
+    },
+  ],
+
+  categories: [
+    {
+      id: "activity",
+      name: "Hoạt động của lớp",
+      icon: "🎭",
+      color: "from-pink-300 to-rose-400",
+      bg: "bg-rose-50",
+    },
+    {
+      id: "song",
+      name: "Bài hát, thơ ca",
+      icon: "🎵",
+      color: "from-purple-300 to-violet-400",
+      bg: "bg-purple-50",
+    },
+    {
+      id: "story",
+      name: "Truyện kể chuyện",
+      icon: "📚",
+      color: "from-amber-300 to-orange-400",
+      bg: "bg-amber-50",
+    },
+    {
+      id: "media",
+      name: "Hình ảnh, video",
+      icon: "🎬",
+      color: "from-sky-300 to-blue-400",
+      bg: "bg-sky-50",
+    },
+    {
+      id: "creative",
+      name: "Góc sáng tạo",
+      icon: "🎨",
+      color: "from-green-300 to-emerald-400",
+      bg: "bg-green-50",
+    },
+  ],
+
+  resources: [
+    {
+      id: "resource-1",
+      title: 'Kể chuyện "Chú Ếch Con"',
+      description:
+        "Câu chuyện về chú ếch con học bơi cùng bạn bè ao làng, rất vui nhộn và bổ ích cho bé.",
+      type: "story",
+      typeLabel: "Truyện kể",
+      categoryId: "story",
+      category: "Truyện kể chuyện",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "2 giờ trước",
+      views: 128,
+      emoji: "🐸",
+      color: "from-emerald-200 to-teal-300",
+      bgPattern: "bg-emerald-50",
+      size: "2.4 MB",
+      teacher: "Cô Lan",
+      fileName: "chu-ech-con.pdf",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-2",
+      title: "Buổi sinh hoạt lớp",
+      description:
+        "Ảnh và video buổi sinh hoạt lớp Hoa Mai tháng 3 - các bé vui chơi và học tập.",
+      type: "video",
+      typeLabel: "Video",
+      categoryId: "activity",
+      category: "Hoạt động của lớp",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "5 giờ trước",
+      views: 95,
+      emoji: "🎭",
+      color: "from-pink-200 to-rose-300",
+      bgPattern: "bg-pink-50",
+      size: "45.2 MB",
+      teacher: "Cô Hoa",
+      fileName: "sinh-hoat-lop.mp4",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-3",
+      title: 'Bài hát "Con cào cào"',
+      description:
+        "Bài hát vui nhộn giúp bé phát triển ngôn ngữ và cảm thụ âm nhạc từ sớm.",
+      type: "song",
+      typeLabel: "Bài hát",
+      categoryId: "song",
+      category: "Bài hát, thơ ca",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "1 ngày trước",
+      views: 212,
+      emoji: "🎵",
+      color: "from-purple-200 to-violet-300",
+      bgPattern: "bg-purple-50",
+      size: "5.1 MB",
+      teacher: "Cô Mai",
+      fileName: "con-cao-cao.mp3",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-4",
+      title: "Tranh của bé Bảo Linh",
+      description:
+        "Tác phẩm vẽ tranh màu nước tuyệt vời của bé Bảo Linh trong giờ học mỹ thuật.",
+      type: "image",
+      typeLabel: "Hình ảnh",
+      categoryId: "creative",
+      category: "Góc sáng tạo",
+
+      targetType: "child",
+      childId: "bao-linh",
+
+      updatedAt: "2 ngày trước",
+      views: 67,
+      emoji: "🎨",
+      color: "from-yellow-200 to-amber-300",
+      bgPattern: "bg-yellow-50",
+      size: "1.8 MB",
+      teacher: "Cô Lan",
+      fileName: "tranh-bao-linh.png",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-5",
+      title: 'Thơ "Bé học chữ"',
+      description:
+        "Bài thơ đơn giản giúp bé làm quen với chữ cái tiếng Việt một cách vui nhộn.",
+      type: "song",
+      typeLabel: "Thơ ca",
+      categoryId: "song",
+      category: "Bài hát, thơ ca",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "3 ngày trước",
+      views: 143,
+      emoji: "📝",
+      color: "from-sky-200 to-blue-300",
+      bgPattern: "bg-sky-50",
+      size: "0.5 MB",
+      teacher: "Cô Mai",
+      fileName: "be-hoc-chu.pdf",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-6",
+      title: "Trò chơi vận động",
+      description:
+        "Video hướng dẫn các trò chơi vận động giúp bé phát triển thể chất toàn diện.",
+      type: "video",
+      typeLabel: "Video",
+      categoryId: "activity",
+      category: "Hoạt động của lớp",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "4 ngày trước",
+      views: 78,
+      emoji: "⚽",
+      color: "from-orange-200 to-red-300",
+      bgPattern: "bg-orange-50",
+      size: "28.3 MB",
+      teacher: "Cô Hoa",
+      fileName: "tro-choi-van-dong.mp4",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-7",
+      title: 'Truyện "Rùa và Thỏ"',
+      description:
+        "Câu chuyện kinh điển về sự kiên nhẫn và cố gắng, giúp bé học bài học quý giá.",
+      type: "story",
+      typeLabel: "Truyện kể",
+      categoryId: "story",
+      category: "Truyện kể chuyện",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "5 ngày trước",
+      views: 189,
+      emoji: "🐢",
+      color: "from-lime-200 to-green-300",
+      bgPattern: "bg-lime-50",
+      size: "3.2 MB",
+      teacher: "Cô Lan",
+      fileName: "rua-va-tho.pdf",
+      fileUrl: "#",
+    },
+    {
+      id: "resource-8",
+      title: "Ảnh lễ 8/3",
+      description:
+        "Bộ ảnh kỷ niệm ngày 8/3 yêu thương, các bé tặng hoa cho cô giáo.",
+      type: "image",
+      typeLabel: "Hình ảnh",
+      categoryId: "media",
+      category: "Hình ảnh, video",
+
+      targetType: "class",
+      childId: null,
+
+      updatedAt: "1 tuần trước",
+      views: 324,
+      emoji: "🌸",
+      color: "from-pink-200 to-fuchsia-300",
+      bgPattern: "bg-pink-50",
+      size: "12.7 MB",
+      teacher: "Cô Hoa",
+      fileName: "le-8-3.zip",
+      fileUrl: "#",
+    },
+  ],
+
+  notifications: [
+    {
+      id: "notification-1",
+      icon: "💬",
+      text: "Cô giáo đã bình luận vào tranh của bé Bảo Linh",
+      time: "5 phút trước",
+      read: false,
+      color: "bg-pink-100",
+      childId: "bao-linh",
+    },
+    {
+      id: "notification-2",
+      icon: "🎵",
+      text: 'Thêm bài hát "Con cào cào" vào danh sách lớp',
+      time: "30 phút trước",
+      read: false,
+      color: "bg-purple-100",
+      childId: null,
+    },
+    {
+      id: "notification-3",
+      icon: "🎬",
+      text: "Có video mới trong hoạt động của lớp",
+      time: "2 giờ trước",
+      read: true,
+      color: "bg-sky-100",
+      childId: null,
+    },
+  ],
+};
