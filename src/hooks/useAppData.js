@@ -11,12 +11,19 @@ function safeParse(value) {
   }
 }
 
+function createId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function mergeById(defaultItems = [], savedItems = []) {
-  const savedIds = new Set(savedItems.map((item) => item.id));
+  const savedArray = Array.isArray(savedItems) ? savedItems : [];
+  const defaultArray = Array.isArray(defaultItems) ? defaultItems : [];
+
+  const savedIds = new Set(savedArray.map((item) => item.id));
 
   return [
-    ...savedItems,
-    ...defaultItems.filter((item) => !savedIds.has(item.id)),
+    ...savedArray,
+    ...defaultArray.filter((item) => !savedIds.has(item.id)),
   ];
 }
 
@@ -32,44 +39,38 @@ function mergeAppData(savedData) {
       ...(savedData.siteConfig || {}),
     },
 
-    children: mergeById(defaultAppData.children, savedData.children || []),
+    children: mergeById(defaultAppData.children, savedData.children),
 
-    categories: mergeById(
-      defaultAppData.categories,
-      savedData.categories || []
-    ),
+    categories: mergeById(defaultAppData.categories, savedData.categories),
 
-    resources: mergeById(
-      defaultAppData.resources,
-      savedData.resources || []
-    ),
+    resources: mergeById(defaultAppData.resources, savedData.resources),
 
     notifications: mergeById(
       defaultAppData.notifications,
-      savedData.notifications || []
+      savedData.notifications
     ),
   };
 }
 
-function createId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function useAppData() {
+  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
   const [appData, setAppData] = useState(defaultAppData);
 
+  // Load localStorage trước
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     const parsed = safeParse(saved);
 
     setAppData(mergeAppData(parsed));
+    setHasLoadedStorage(true);
   }, []);
 
+  // Chỉ save sau khi đã load xong localStorage
   useEffect(() => {
-  if (!appData) return;
+    if (!hasLoadedStorage) return;
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-}, [appData]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  }, [appData, hasLoadedStorage]);
 
   const activeChild = useMemo(() => {
     const activeChildId = appData.siteConfig.activeChildId;
@@ -83,7 +84,7 @@ export function useAppData() {
 
   const classResources = useMemo(() => {
     return appData.resources.filter(
-      (resource) => resource.targetType === "class"
+      (resource) => (resource.targetType || "class") === "class"
     );
   }, [appData.resources]);
 
@@ -166,6 +167,15 @@ export function useAppData() {
       icon: categoryData.icon || "📁",
       color: categoryData.color || "from-purple-300 to-pink-400",
       bg: categoryData.bg || "bg-purple-50",
+      gradient:
+        categoryData.gradient ||
+        categoryData.color ||
+        "from-purple-400 to-pink-500",
+      lightGradient:
+        categoryData.lightGradient ||
+        categoryData.bgGradient ||
+        "from-purple-100 to-pink-200",
+      description: categoryData.description || "",
     };
 
     setAppData((prev) => ({
@@ -184,6 +194,14 @@ export function useAppData() {
           ? {
               ...category,
               ...categoryData,
+              gradient:
+                categoryData.gradient ||
+                categoryData.color ||
+                category.gradient,
+              lightGradient:
+                categoryData.lightGradient ||
+                categoryData.bgGradient ||
+                category.lightGradient,
             }
           : category
       ),
@@ -201,7 +219,9 @@ export function useAppData() {
   const deleteCategory = (categoryId) => {
     setAppData((prev) => ({
       ...prev,
-      categories: prev.categories.filter((category) => category.id !== categoryId),
+      categories: prev.categories.filter(
+        (category) => category.id !== categoryId
+      ),
       resources: prev.resources.map((resource) =>
         resource.categoryId === categoryId
           ? {
@@ -243,6 +263,7 @@ export function useAppData() {
       teacher: resourceData.teacher || "Cô giáo",
       fileName: resourceData.fileName || "",
       fileUrl: resourceData.fileUrl || "#",
+      thumbnailUrl: resourceData.thumbnailUrl || "",
     };
 
     setAppData((prev) => ({
@@ -277,7 +298,8 @@ export function useAppData() {
           ? {
               ...resource,
               ...resourceData,
-              category: category?.name || resourceData.category || resource.category,
+              category:
+                category?.name || resourceData.category || resource.category,
               childId:
                 resourceData.targetType === "child"
                   ? resourceData.childId || resource.childId
@@ -291,7 +313,9 @@ export function useAppData() {
   const deleteResource = (resourceId) => {
     setAppData((prev) => ({
       ...prev,
-      resources: prev.resources.filter((resource) => resource.id !== resourceId),
+      resources: prev.resources.filter(
+        (resource) => resource.id !== resourceId
+      ),
     }));
   };
 

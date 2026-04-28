@@ -815,7 +815,12 @@ export const TopTabs = ({ activeTab, onTabChange }) => {
 // ============================================================
 // LEFT SIDEBAR COMPONENT
 // ============================================================
-export const LeftSidebar = ({ activeMenu, onMenuChange, siteConfig }) => {
+export const LeftSidebar = ({
+  activeMenu,
+  onMenuChange,
+  siteConfig,
+  categories = [],
+}) => {
   const config = {
     classCardTitle:
       siteConfig?.classCardTitle ||
@@ -829,13 +834,14 @@ export const LeftSidebar = ({ activeMenu, onMenuChange, siteConfig }) => {
   };
 
   const menuItems = [
-    { id: "all", label: "Tất cả tài liệu", icon: "📋", emoji: "📋" },
-    { id: "activity", label: "Hoạt động của lớp", icon: "🎭", emoji: "🎭" },
-    { id: "song", label: "Bài hát, thơ ca", icon: "🎵", emoji: "🎵" },
-    { id: "story", label: "Truyện kể chuyện", icon: "📚", emoji: "📖" },
-    { id: "media", label: "Hình ảnh, video", icon: "🎬", emoji: "📸" },
-    { id: "creative", label: "Góc sáng tạo", icon: "🎨", emoji: "🖌️" },
-  ];
+  { id: "all", label: "Tất cả tài liệu", icon: "📋", emoji: "📋" },
+  ...(categories || []).map((category) => ({
+    id: category.id,
+    label: category.name,
+    icon: category.icon || "📁",
+    emoji: category.icon || "📁",
+  })),
+];
 
   return (
     <aside
@@ -1810,6 +1816,7 @@ export const MobileDrawer = ({
   activeMenu,
   onMenuChange,
   siteConfig,
+  categories = [],
 }) => {
   const config = {
     classCardTitle:
@@ -1883,13 +1890,13 @@ export const MobileDrawer = ({
 
         <nav className="px-4 flex-1 overflow-y-auto scrollbar-hide">
           {[
-            { id: "all", label: "Tất cả tài liệu", emoji: "📋" },
-            { id: "activity", label: "Hoạt động của lớp", emoji: "🎭" },
-            { id: "song", label: "Bài hát, thơ ca", emoji: "🎵" },
-            { id: "story", label: "Truyện kể chuyện", emoji: "📖" },
-            { id: "media", label: "Hình ảnh, video", emoji: "📸" },
-            { id: "creative", label: "Góc sáng tạo", emoji: "🖌️" },
-          ].map((item) => (
+  { id: "all", label: "Tất cả tài liệu", emoji: "📋" },
+  ...(categories || []).map((category) => ({
+    id: category.id,
+    label: category.name,
+    emoji: category.icon || "📁",
+  })),
+].map((item) => (
             <button
               key={item.id}
               onClick={() => {
