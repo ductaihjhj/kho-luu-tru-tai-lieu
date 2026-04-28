@@ -102,13 +102,9 @@ export default function AdminPage({
             Đăng nhập
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="mt-3 w-full rounded-2xl bg-purple-100 px-4 py-3 font-bold text-purple-500 hover:bg-purple-200"
-          >
+          <a href="#/" className="mt-3 text-purple-500 hover:underline">
             Quay về trang chính
-          </button>
+          </a>
         </form>
       </div>
     );
