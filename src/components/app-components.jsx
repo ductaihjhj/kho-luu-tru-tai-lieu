@@ -1,5 +1,10 @@
 import React from "react";
 import { getResourcePreviewMeta } from "../utils/resourcePreview";
+import {
+  createCommentForResource,
+  fetchCommentsByResource,
+} from "../services/firebaseComments";
+import { createPortal } from "react-dom";
 // ============================================================
 // MOCK DATA
 // ============================================================
@@ -1197,138 +1202,452 @@ const ResourcePreview = ({ resource }) => {
   return fallback;
 };
 
-export const ResourceCard = ({ resource, viewMode = "grid" }) => {
-  if (viewMode === "list") {
-    return (
-      <div className="card-hover flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm border border-purple-50">
-        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl bg-purple-100">
-          <ResourcePreview resource={resource} />
-        </div>
+const ResourceDetailModal = ({ resource, open, onClose }) => {
+  const [comments, setComments] = React.useState([]);
+  const [name, setName] = React.useState(() => {
+    return localStorage.getItem("commenter_name") || "";
+  });
+  const [message, setMessage] = React.useState("");
+  const [loadingComments, setLoadingComments] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState("");
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className={cn(
-                "text-xs font-bold px-2.5 py-0.5 rounded-full",
-                TYPE_COLORS[resource.type] || "bg-purple-100 text-purple-700"
-              )}
-            >
-              {TYPE_ICONS[resource.type] || "📄"}{" "}
+  React.useEffect(() => {
+    if (!open || !resource?.id) return;
+
+    let mounted = true;
+
+    async function loadComments() {
+      try {
+        setLoadingComments(true);
+        setError("");
+
+        const data = await fetchCommentsByResource(resource);
+
+        if (mounted) {
+          setComments(data);
+        }
+      } catch (err) {
+        console.error(err);
+
+        if (mounted) {
+          setError("Không tải được bình luận.");
+        }
+      } finally {
+        if (mounted) {
+          setLoadingComments(false);
+        }
+      }
+    }
+
+    loadComments();
+
+    return () => {
+      mounted = false;
+    };
+  }, [open, resource?.id]);
+
+  if (!open || !resource) return null;
+
+  const handleSubmitComment = async (event) => {
+    event.preventDefault();
+
+    if (!name.trim()) {
+      setError("Bạn cần nhập tên trước khi bình luận.");
+      return;
+    }
+
+    if (!message.trim()) {
+      setError("Bạn cần nhập nội dung bình luận.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError("");
+
+      const newComment = await createCommentForResource({
+  resource,
+  name,
+  message,
+});
+
+      localStorage.setItem("commenter_name", name.trim());
+
+      setComments((prev) => [newComment, ...prev]);
+      setMessage("");
+    } catch (err) {
+      console.error(err);
+      setError("Gửi bình luận thất bại. Kiểm tra Firestore Rules nha.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "Vừa xong";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "Vừa xong";
+
+    return date.toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  return createPortal(
+  <div
+    className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/45 p-3 backdrop-blur-md sm:p-5"
+    onClick={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}
+  >
+    <div className="relative flex h-[92vh] w-[94vw] max-w-[1380px] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+      {/* Close button */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-5 top-5 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl font-black text-pink-500 shadow-lg transition hover:scale-105 hover:bg-pink-50"
+        aria-label="Đóng"
+      >
+        ×
+      </button>
+
+      {/* Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 px-6 py-6 text-white sm:px-8">
+        <div className="absolute -right-10 -top-16 h-40 w-40 rounded-full bg-white/10" />
+        <div className="absolute -bottom-20 left-20 h-44 w-44 rounded-full bg-white/10" />
+
+        <div className="relative max-w-[calc(100%-4rem)]">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-white/75">
+            Chi tiết tài liệu
+          </p>
+
+          <h2
+            className="max-w-5xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl"
+            style={{
+              fontFamily: "'Baloo 2', cursive",
+              wordBreak: "normal",
+              overflowWrap: "break-word",
+            }}
+          >
+            {resource.title || "Tài liệu"}
+          </h2>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white/20 px-4 py-1.5 text-xs font-black text-white">
               {resource.typeLabel || "Tài liệu"}
             </span>
 
-            <span className="text-xs text-gray-400">
+            <span className="rounded-full bg-white/20 px-4 py-1.5 text-xs font-black text-white">
+              {resource.category || "Danh mục"}
+            </span>
+
+            <span className="rounded-full bg-white/20 px-4 py-1.5 text-xs font-black text-white">
               {resource.updatedAt || "Vừa xong"}
             </span>
           </div>
-
-          <h4 className="font-bold text-gray-800 mt-1 text-sm truncate">
-            {resource.title || "Tài liệu chưa có tiêu đề"}
-          </h4>
-
-          <p className="text-xs text-gray-500 truncate">
-            {resource.description || "Chưa có mô tả."}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <a
-            href={resource.fileUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-200 btn-bounce transition-all"
-            title="Xem tài liệu"
-          >
-            <i className="fas fa-eye text-xs"></i>
-          </a>
-
-          <a
-            href={resource.fileUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            download
-            className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0"
-            title="Tải xuống"
-          >
-            <i className="fas fa-download text-xs"></i>
-          </a>
         </div>
       </div>
+
+      {/* Body */}
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fbff] p-4 sm:p-6 lg:p-8">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
+          {/* Left content */}
+          <div className="min-w-0 space-y-5">
+            <div className="overflow-hidden rounded-[2rem] border border-purple-100 bg-white shadow-sm">
+              <div className="h-[320px] sm:h-[420px] lg:h-[520px]">
+                <ResourcePreview resource={resource} />
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] bg-white p-6 shadow-sm border border-purple-100">
+              <h3
+                className="mb-3 text-2xl font-black text-purple-700"
+                style={{ fontFamily: "'Baloo 2', cursive" }}
+              >
+                Mô tả
+              </h3>
+
+              <p className="text-base font-semibold leading-relaxed text-gray-600">
+                {resource.description || "Chưa có mô tả."}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <a
+                href={resource.fileUrl || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-400 to-pink-400 px-5 py-4 text-sm font-black text-white shadow-md btn-bounce"
+              >
+                <i className="fas fa-eye"></i>
+                Mở tài liệu
+              </a>
+
+              <a
+                href={resource.fileUrl || "#"}
+                target="_blank"
+                rel="noreferrer"
+                download
+                className="flex items-center justify-center gap-2 rounded-2xl bg-green-100 px-5 py-4 text-sm font-black text-green-600 btn-bounce"
+              >
+                <i className="fas fa-download"></i>
+                Tải xuống
+              </a>
+            </div>
+          </div>
+
+          {/* Comments */}
+          <div className="min-w-0 space-y-5">
+            <div className="rounded-[2rem] border border-purple-100 bg-white p-6 shadow-sm">
+              <h3
+                className="mb-4 text-2xl font-black text-purple-700"
+                style={{ fontFamily: "'Baloo 2', cursive" }}
+              >
+                💬 Bình luận
+              </h3>
+
+              <form onSubmit={handleSubmitComment} className="space-y-3">
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Tên của bạn"
+                  className="w-full rounded-2xl border-2 border-purple-100 bg-white px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
+                />
+
+                <textarea
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  placeholder="Nhập bình luận..."
+                  rows={5}
+                  className="w-full resize-none rounded-2xl border-2 border-purple-100 bg-white px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
+                />
+
+                {error && (
+                  <p className="rounded-2xl bg-pink-50 px-3 py-2 text-xs font-bold text-pink-500">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 text-sm font-black text-white shadow-md btn-bounce disabled:opacity-50"
+                >
+                  {submitting ? "Đang gửi..." : "Gửi bình luận"}
+                </button>
+              </form>
+            </div>
+
+            <div className="rounded-[2rem] border border-purple-100 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h4
+                  className="text-xl font-black text-gray-700"
+                  style={{ fontFamily: "'Baloo 2', cursive" }}
+                >
+                  Bình luận gần đây
+                </h4>
+
+                <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-black text-purple-500">
+                  {comments.length}
+                </span>
+              </div>
+
+              {loadingComments ? (
+                <p className="text-sm font-semibold text-gray-400">
+                  Đang tải bình luận...
+                </p>
+              ) : comments.length === 0 ? (
+                <p className="rounded-2xl bg-purple-50 p-4 text-sm font-semibold text-gray-500">
+                  Chưa có bình luận nào. Hãy là người đầu tiên nha!
+                </p>
+              ) : (
+                <div className="max-h-[520px] space-y-3 overflow-y-auto pr-1">
+                  {comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="rounded-2xl bg-purple-50 p-4"
+                    >
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <p className="min-w-0 truncate text-sm font-black text-purple-700">
+                          {comment.name}
+                        </p>
+
+                        <span className="shrink-0 text-[10px] font-bold text-gray-400">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+
+                      <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-relaxed text-gray-600">
+                        {comment.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>,
+  document.body
+);
+};
+export const ResourceCard = ({ resource, viewMode = "grid" }) => {
+  const [detailOpen, setDetailOpen] = React.useState(false);
+
+  if (viewMode === "list") {
+    return (
+      <>
+        <div className="card-hover flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm border border-purple-50">
+          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl bg-purple-100">
+            <ResourcePreview resource={resource} />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={cn(
+                  "text-xs font-bold px-2.5 py-0.5 rounded-full",
+                  TYPE_COLORS[resource.type] || "bg-purple-100 text-purple-700"
+                )}
+              >
+                {TYPE_ICONS[resource.type] || "📄"}{" "}
+                {resource.typeLabel || "Tài liệu"}
+              </span>
+
+              <span className="text-xs text-gray-400">
+                {resource.updatedAt || "Vừa xong"}
+              </span>
+            </div>
+
+            <h4 className="font-bold text-gray-800 mt-1 text-sm truncate">
+              {resource.title || "Tài liệu chưa có tiêu đề"}
+            </h4>
+
+            <p className="text-xs text-gray-500 truncate">
+              {resource.description || "Chưa có mô tả."}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setDetailOpen(true)}
+              className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-200 btn-bounce transition-all"
+              title="Xem chi tiết"
+            >
+              <i className="fas fa-eye text-xs"></i>
+            </button>
+
+            <a
+              href={resource.fileUrl || "#"}
+              target="_blank"
+              rel="noreferrer"
+              download
+              className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0"
+              title="Tải xuống"
+            >
+              <i className="fas fa-download text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <ResourceDetailModal
+          resource={resource}
+          open={detailOpen}
+          onClose={() => setDetailOpen(false)}
+        />
+      </>
     );
   }
 
   return (
-    <div className="card-hover resource-card rounded-3xl overflow-hidden bg-white shadow-sm border border-purple-50 flex flex-col">
-      <div className="resource-card-preview relative h-32 overflow-hidden">
-        <ResourcePreview resource={resource} />
+    <>
+      <div className="card-hover resource-card rounded-3xl overflow-hidden bg-white shadow-sm border border-purple-50 flex flex-col">
+        <div className="resource-card-preview relative h-32 overflow-hidden">
+          <ResourcePreview resource={resource} />
 
-        <div className="absolute top-2 right-2">
-          <FlowerSVG color="rgba(255,255,255,0.7)" size={18} />
+          <div className="absolute top-2 right-2">
+            <FlowerSVG color="rgba(255,255,255,0.7)" size={18} />
+          </div>
+
+          <div className="absolute bottom-2 left-2">
+            <BubbleSVG size={14} />
+          </div>
+
+          <div
+            className={cn(
+              "absolute top-2 left-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm bg-white/90 backdrop-blur",
+              TYPE_COLORS[resource.type] || "text-purple-700"
+            )}
+          >
+            {TYPE_ICONS[resource.type] || "📄"}{" "}
+            {resource.typeLabel || "Tài liệu"}
+          </div>
         </div>
 
-        <div className="absolute bottom-2 left-2">
-          <BubbleSVG size={14} />
-        </div>
+        <div className="p-4 flex flex-col gap-2 flex-1">
+          <h4
+            className="font-black text-gray-800 text-sm leading-tight line-clamp-2"
+            style={{ fontFamily: "'Baloo 2', cursive" }}
+          >
+            {resource.title || "Tài liệu chưa có tiêu đề"}
+          </h4>
 
-        <div
-          className={cn(
-            "absolute top-2 left-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm bg-white/90 backdrop-blur",
-            TYPE_COLORS[resource.type] || "text-purple-700"
-          )}
-        >
-          {TYPE_ICONS[resource.type] || "📄"}{" "}
-          {resource.typeLabel || "Tài liệu"}
+          <p className="text-xs text-gray-500 line-clamp-2 flex-1">
+            {resource.description || "Chưa có mô tả."}
+          </p>
+
+          <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
+            <span className="flex items-center gap-1">
+              <i className="fas fa-clock text-purple-300"></i>
+              {resource.updatedAt || "Vừa xong"}
+            </span>
+
+            <span className="flex items-center gap-1">
+              <i className="fas fa-eye text-sky-300"></i>
+              {resource.views || 0}
+            </span>
+          </div>
+
+          <div className="flex gap-2 mt-1">
+            <button
+              type="button"
+              onClick={() => setDetailOpen(true)}
+              className="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-400 to-pink-400 text-white text-xs font-bold btn-bounce shadow-sm flex items-center justify-center gap-1"
+            >
+              <i className="fas fa-eye text-xs"></i>
+              Xem chi tiết
+            </button>
+
+            <a
+              href={resource.fileUrl || "#"}
+              target="_blank"
+              rel="noreferrer"
+              download
+              className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0"
+              title="Tải xuống"
+            >
+              <i className="fas fa-download text-xs"></i>
+            </a>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        <h4
-          className="font-black text-gray-800 text-sm leading-tight line-clamp-2"
-          style={{ fontFamily: "'Baloo 2', cursive" }}
-        >
-          {resource.title || "Tài liệu chưa có tiêu đề"}
-        </h4>
-
-        <p className="text-xs text-gray-500 line-clamp-2 flex-1">
-          {resource.description || "Chưa có mô tả."}
-        </p>
-
-        <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-          <span className="flex items-center gap-1">
-            <i className="fas fa-clock text-purple-300"></i>
-            {resource.updatedAt || "Vừa xong"}
-          </span>
-
-          <span className="flex items-center gap-1">
-            <i className="fas fa-eye text-sky-300"></i>
-            {resource.views || 0}
-          </span>
-        </div>
-
-        <div className="flex gap-2 mt-1">
-          <a
-            href={resource.fileUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-400 to-pink-400 text-white text-xs font-bold btn-bounce shadow-sm flex items-center justify-center gap-1"
-          >
-            <i className="fas fa-eye text-xs"></i>
-            Xem chi tiết
-          </a>
-
-          <a
-            href={resource.fileUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            download
-            className="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 btn-bounce transition-all flex-shrink-0"
-            title="Tải xuống"
-          >
-            <i className="fas fa-download text-xs"></i>
-          </a>
-        </div>
-      </div>
-    </div>
+      <ResourceDetailModal
+        resource={resource}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
+    </>
   );
 };
 
