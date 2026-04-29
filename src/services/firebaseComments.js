@@ -10,6 +10,7 @@ import {
 import { db } from "../lib/firebase";
 
 const COMMENTS_COLLECTION = "comments";
+const NOTIFICATIONS_COLLECTION = "notifications";
 
 function normalizeComment(docItem) {
   const data = docItem.data();
@@ -52,28 +53,42 @@ export async function fetchCommentsByResource(resource) {
     });
 }
 
-export async function createCommentForResource({
-  resource,
-  name,
-  message,
-}) {
+export async function createCommentForResource({ resource, name, message }) {
   const commentKey = getCommentKey(resource);
+  const cleanName = name.trim();
+  const cleanMessage = message.trim();
 
-  const payload = {
+  const commentPayload = {
     commentKey,
     resourceId: resource?.id || "",
     resourceTitle: resource?.title || "",
     resourceFileUrl: resource?.fileUrl || "",
-    name: name.trim(),
-    message: message.trim(),
+    name: cleanName,
+    message: cleanMessage,
     createdAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, COMMENTS_COLLECTION), payload);
+  const commentRef = await addDoc(
+    collection(db, COMMENTS_COLLECTION),
+    commentPayload
+  );
+
+  await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+    icon: "💬",
+    text: `${cleanName} đã bình luận vào "${resource?.title || "tài liệu"}"`,
+    time: "Vừa xong",
+    read: false,
+    color: "bg-pink-100",
+    resourceId: resource?.id || "",
+    resourceTitle: resource?.title || "",
+    commentKey,
+    commenterName: cleanName,
+    createdAt: serverTimestamp(),
+  });
 
   return {
-    id: docRef.id,
-    ...payload,
+    id: commentRef.id,
+    ...commentPayload,
     createdAt: new Date().toISOString(),
   };
 }

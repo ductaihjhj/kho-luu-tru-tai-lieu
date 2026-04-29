@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-
+import {
+  markAllNotificationsReadInFirebase,
+  subscribeNotificationsFromFirebase,
+} from "./services/firebaseNotifications";
 import {
   createResourceInFirebase,
   fetchResourcesFromFirebase,
@@ -87,7 +90,7 @@ export default function App() {
       return [];
     }
   });
-
+const [firebaseNotifications, setFirebaseNotifications] = useState([]);
   const [activeTab, setActiveTab] = useState("home");
   const [activeMenu, setActiveMenu] = useState("all");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -122,7 +125,13 @@ export default function App() {
     markNotificationsRead,
     resetAllData,
   } = useAppData();
+useEffect(() => {
+  const unsubscribe = subscribeNotificationsFromFirebase((data) => {
+    setFirebaseNotifications(data);
+  });
 
+  return () => unsubscribe();
+}, []);
   const rememberDeletedResource = (resourceId) => {
     setDeletedResourceIds((prev) => {
       const next = [...new Set([...prev, resourceId])];
@@ -130,7 +139,15 @@ export default function App() {
       return next;
     });
   };
+const handleMarkNotificationsRead = async () => {
+  markNotificationsRead();
 
+  try {
+    await markAllNotificationsReadInFirebase();
+  } catch (error) {
+    console.error("Không đánh dấu thông báo Firebase được:", error);
+  }
+};
   const normalizedFirebaseResources = firebaseResources.map((item) => ({
     ...item,
     id: item.id,
@@ -211,7 +228,16 @@ export default function App() {
     };
   }, []);
 
-  const unreadCount = notifications.filter((item) => !item.read).length;
+ 
+
+const allNotifications = [
+  ...firebaseNotifications,
+  ...(notifications || []),
+].filter((item, index, array) => {
+  return array.findIndex((notification) => notification.id === item.id) === index;
+});
+
+const unreadCount = allNotifications.filter((item) => !item.read).length;
 
   const handleOpenUpload = (category = null) => {
     setUploadCategory(category);
@@ -337,10 +363,10 @@ export default function App() {
               resources={allResources}
               classResources={allClassResources}
               childResources={allChildResources}
-              notifications={notifications}
+              notifications={allNotifications}
               unreadCount={unreadCount}
               onUpload={handleOpenUpload}
-              onMarkRead={markNotificationsRead}
+              onMarkRead={handleMarkNotificationsRead}
               onViewResource={incrementResourceViews}
               mobileDrawerOpen={mobileDrawerOpen}
               setMobileDrawerOpen={setMobileDrawerOpen}
@@ -357,7 +383,7 @@ export default function App() {
               activeChild={activeChild}
               categories={categories}
               resources={allResources}
-              notifications={notifications}
+              notifications={allNotifications}
               updateSiteConfig={updateSiteConfig}
               createChild={createChild}
               updateChild={updateChild}
