@@ -1686,247 +1686,283 @@ export const EmptyState = ({ searchQuery }) => (
 // ============================================================
 // UPLOAD MODAL COMPONENT
 // ============================================================
-export const UploadModal = ({ open, onClose, onSuccess, defaultCategory }) => {
+export const UploadModal = ({
+  open,
+  onClose,
+  onSuccess,
+  defaultCategory,
+  siteConfig,
+  categories = [],
+}) => {
   const [dragging, setDragging] = React.useState(false);
-  const [fileName, setFileName] = React.useState(null);
+  const [fileName, setFileName] = React.useState("");
   const [selectedFile, setSelectedFile] = React.useState(null);
   const [uploading, setUploading] = React.useState(false);
-  const [progress, setProgress] = React.useState(0);
-  const [category, setCategory] = React.useState(
-    defaultCategory || "Hoạt động của lớp",
-  );
   const [title, setTitle] = React.useState("");
-  const fileInputRef = React.useRef();
+  const [category, setCategory] = React.useState(
+    defaultCategory || categories[0]?.name || "Hoạt động của lớp"
+  );
+  const [fileUrl, setFileUrl] = React.useState("");
+  const [thumbnailUrl, setThumbnailUrl] = React.useState("");
+  const [error, setError] = React.useState("");
+
+  const fileInputRef = React.useRef(null);
 
   React.useEffect(() => {
-    if (defaultCategory) setCategory(defaultCategory);
-  }, [defaultCategory]);
+    if (!open) return;
 
-  const handleDrop = (e) => {
-  e.preventDefault();
-  setDragging(false);
-
-  const file = e.dataTransfer.files[0];
-
-  if (file) {
-    setSelectedFile(file);
-    setFileName(file.name);
-  }
-};
-
-  const handleFile = (e) => {
-  const file = e.target.files[0];
-
-  if (file) {
-    setSelectedFile(file);
-    setFileName(file.name);
-  }
-};
-
-  const handleUpload = () => {
-  if (!selectedFile && !title) return;
-
-  setUploading(true);
-  setProgress(0);
-
-  onSuccess("Đang tải tài liệu lên...", {
-    title,
-    category,
-    file: selectedFile,
-    fileName: selectedFile?.name || fileName,
-    size: selectedFile ? `${Math.round(selectedFile.size / 1024)} KB` : "Mới tải",
-  });
-
-  setUploading(false);
-  setProgress(0);
-  setSelectedFile(null);
-  setFileName(null);
-  setTitle("");
-  onClose();
-};
+    setCategory(defaultCategory || categories[0]?.name || "Hoạt động của lớp");
+    setError("");
+  }, [open, defaultCategory, categories]);
 
   if (!open) return null;
 
+  const resetForm = () => {
+    setDragging(false);
+    setFileName("");
+    setSelectedFile(null);
+    setUploading(false);
+    setTitle("");
+    setFileUrl("");
+    setThumbnailUrl("");
+    setError("");
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setDragging(false);
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (file) {
+      setSelectedFile(file);
+      setFileName(file.name);
+
+      if (!title) {
+        setTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
+    }
+  };
+
+  const handleFile = (event) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      setSelectedFile(file);
+      setFileName(file.name);
+
+      if (!title) {
+        setTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!title.trim()) {
+      setError("Vui lòng nhập tiêu đề tài liệu.");
+      return;
+    }
+
+    if (!fileUrl.trim()) {
+      setError(
+        "Vui lòng dán link file Google Drive. Chọn file ở máy chỉ lấy tên file, chưa lưu file thật."
+      );
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setError("");
+
+      await onSuccess("Đã thêm tài liệu thành công!", {
+        title: title.trim(),
+        category,
+        fileName: fileName || title.trim(),
+        fileUrl: fileUrl.trim(),
+        thumbnailUrl: thumbnailUrl.trim(),
+        size: selectedFile
+          ? `${Math.max(1, Math.round(selectedFile.size / 1024))} KB`
+          : "Link Drive",
+      });
+
+      resetForm();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Thêm tài liệu thất bại. Kiểm tra Firestore hoặc link file nha.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-4 modal-overlay"
-      style={{
-        background: "rgba(91, 33, 182, 0.25)",
-        backdropFilter: "blur(8px)",
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-purple-950/30 p-4 backdrop-blur-md"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) handleClose();
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="modal-content bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div
-          className="relative px-6 py-5 text-center"
-          style={{
-            background: "linear-gradient(135deg, #a78bfa 0%, #ec4899 100%)",
-          }}
-        >
-          <div className="text-4xl mb-1">☁️</div>
+      <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        <div className="relative bg-gradient-to-r from-purple-400 to-pink-400 px-6 py-7 text-center text-white">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-2xl font-black text-white hover:bg-white/30"
+          >
+            ×
+          </button>
+
+          <div className="mb-2 text-4xl">☁️</div>
 
           <h2
-            className="text-xl font-black text-white"
+            className="text-2xl font-black"
             style={{ fontFamily: "'Baloo 2', cursive" }}
           >
             Tải tài liệu lên
           </h2>
 
-          <p className="text-purple-200 text-xs">
-            Chia sẻ tài liệu với lớp Hoa Mai
+          <p className="mt-1 text-sm font-semibold text-white/80">
+            Chia sẻ tài liệu với {siteConfig?.className || "lớp học"}
           </p>
-
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-all"
-          >
-            ✕
-          </button>
-
-          <div className="absolute top-2 left-4 opacity-50">
-            <FlowerSVG color="white" size={20} />
-          </div>
-
-          <div className="absolute bottom-2 right-8 opacity-50">
-            <StarSVG size={14} color="white" />
-          </div>
         </div>
 
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-purple-700 mb-1.5">
-              Tiêu đề tài liệu
+        <div className="max-h-[72vh] overflow-y-auto p-6">
+          <div className="space-y-5">
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-purple-600">
+                Tiêu đề tài liệu
+              </span>
+
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="VD: Bài hát thiếu nhi tháng 3..."
+                className="w-full rounded-2xl border-2 border-purple-100 px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
+              />
             </label>
 
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="VD: Bài hát thiếu nhi tháng 3..."
-              className="w-full px-4 py-3 rounded-2xl border-2 border-purple-100 text-gray-700 text-sm font-medium focus:outline-none focus:border-purple-400 transition-all placeholder-gray-300"
-            />
-          </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-purple-600">
+                Danh mục
+              </span>
 
-          <div>
-            <label className="block text-sm font-bold text-purple-700 mb-1.5">
-              Danh mục
-            </label>
-
-            <div className="relative">
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full appearance-none px-4 py-3 rounded-2xl border-2 border-purple-100 text-gray-700 text-sm font-medium focus:outline-none focus:border-purple-400 transition-all bg-white pr-10"
+                onChange={(event) => setCategory(event.target.value)}
+                className="w-full rounded-2xl border-2 border-purple-100 bg-white px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
               >
-                {MOCK_DATA.categories.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.icon} {c.name}
+                {(categories || []).map((item) => (
+                  <option key={item.id} value={item.name}>
+                    {item.icon || "📁"} {item.name}
                   </option>
                 ))}
               </select>
+            </label>
 
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
-                <i className="fas fa-chevron-down text-xs"></i>
-              </div>
-            </div>
-          </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-purple-600">
+                Link file Google Drive
+              </span>
 
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current.click()}
-            className={cn(
-              "border-3 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all",
-              dragging
-                ? "drop-zone-active"
-                : "border-purple-200 hover:border-purple-400 hover:bg-purple-50/50",
-            )}
-            style={{ borderWidth: 2.5 }}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFile}
-            />
+              <input
+                value={fileUrl}
+                onChange={(event) => setFileUrl(event.target.value)}
+                placeholder="Dán link file Google Drive ở đây..."
+                className="w-full rounded-2xl border-2 border-purple-100 px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
+              />
 
-            {fileName ? (
-              <div className="space-y-1">
-                <div className="text-3xl">📄</div>
-                <div className="text-sm font-bold text-purple-700 truncate">
-                  {fileName}
-                </div>
-                <div className="text-xs text-purple-400">
-                  Nhấn để chọn file khác
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-4xl">☁️</div>
-                <div className="text-sm font-bold text-purple-600">
-                  Kéo thả file vào đây
-                </div>
-                <div className="text-xs text-gray-400">
-                  hoặc{" "}
-                  <span className="text-purple-500 underline">chọn file</span>{" "}
-                  từ thiết bị
-                </div>
-                <div className="text-xs text-gray-400">
-                  Hỗ trợ: PDF, MP4, MP3, JPG, PNG
-                </div>
-              </div>
-            )}
-          </div>
+              <p className="mt-2 text-xs font-semibold text-gray-400">
+                File cần bật quyền “Anyone with the link” để phụ huynh xem được.
+              </p>
+            </label>
 
-          {uploading && (
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-semibold text-purple-600">
-                <span>Đang tải lên...</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-purple-600">
+                Link ảnh bìa / thumbnail
+              </span>
 
-              <div className="w-full h-3 bg-purple-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${progress}%`,
-                    background: "linear-gradient(90deg, #a78bfa, #ec4899)",
-                  }}
-                />
-              </div>
-            </div>
-          )}
+              <input
+                value={thumbnailUrl}
+                onChange={(event) => setThumbnailUrl(event.target.value)}
+                placeholder="Không bắt buộc. Có thể dán link ảnh bìa riêng."
+                className="w-full rounded-2xl border-2 border-purple-100 px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
+              />
+            </label>
 
-          <div className="flex gap-3 pt-1">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3 rounded-2xl border-2 border-purple-200 text-purple-600 font-bold text-sm btn-bounce hover:bg-purple-50 transition-all"
-            >
-              Huỷ bỏ
-            </button>
-
-            <button
-              onClick={handleUpload}
-              disabled={uploading || (!fileName && !title)}
-              className="flex-1 py-3 rounded-2xl text-white font-bold text-sm btn-bounce shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              style={{
-                background: "linear-gradient(135deg, #a78bfa 0%, #ec4899 100%)",
+            <div
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
               }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={[
+                "cursor-pointer rounded-3xl border-2 border-dashed p-6 text-center transition",
+                dragging
+                  ? "border-purple-400 bg-purple-50"
+                  : "border-purple-200 bg-white hover:bg-purple-50",
+              ].join(" ")}
             >
-              {uploading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i> Đang tải...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-upload"></i> Tải lên ngay
-                </>
-              )}
-            </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFile}
+                accept=".pdf,.mp4,.mp3,.jpg,.jpeg,.png,.doc,.docx,.ppt,.pptx"
+              />
+
+              <div className="mb-2 text-4xl">☁️</div>
+
+              <p className="font-black text-purple-500">
+                {fileName ? fileName : "Kéo thả file vào đây"}
+              </p>
+
+              <p className="mt-1 text-sm font-semibold text-gray-400">
+                hoặc chọn file từ thiết bị để lấy tên file
+              </p>
+
+              <p className="mt-2 text-xs font-semibold text-gray-400">
+                Lưu ý: File thật vẫn cần link Google Drive ở ô bên trên.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-2xl bg-pink-50 px-4 py-3 text-sm font-bold text-pink-500">
+                {error}
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="rounded-2xl border-2 border-purple-100 px-5 py-3 text-sm font-black text-purple-500 btn-bounce"
+              >
+                Huỷ bỏ
+              </button>
+
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={uploading}
+                className="rounded-2xl bg-gradient-to-r from-purple-400 to-pink-400 px-5 py-3 text-sm font-black text-white shadow-md btn-bounce disabled:opacity-50"
+              >
+                {uploading ? (
+                  "Đang lưu..."
+                ) : (
+                  <>
+                    <i className="fas fa-upload mr-2"></i>
+                    Tải lên ngay
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
