@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { defaultAppData } from "../data/defaultAppData";
-
+import {
+  saveSettingsToFirebase,
+  subscribeSettingsFromFirebase,
+} from "../services/firebaseSettings";
 const STORAGE_KEY = "nhat_ky_dien_vien_nhi_app_data";
 
 function safeParse(value) {
@@ -71,7 +74,44 @@ export function useAppData() {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
   }, [appData, hasLoadedStorage]);
+useEffect(() => {
+  const unsubscribe = subscribeSettingsFromFirebase((cloudSettings) => {
+    if (!cloudSettings) return;
 
+    setAppData((prev) => ({
+      ...prev,
+
+      siteConfig: {
+        ...prev.siteConfig,
+        ...(cloudSettings.siteConfig || {}),
+      },
+
+      children:
+        Array.isArray(cloudSettings.children) && cloudSettings.children.length > 0
+          ? cloudSettings.children
+          : prev.children,
+
+      categories:
+        Array.isArray(cloudSettings.categories) &&
+        cloudSettings.categories.length > 0
+          ? cloudSettings.categories
+          : prev.categories,
+    }));
+  });
+
+  return () => unsubscribe();
+}, []);
+const saveCloudSettings = async (nextData) => {
+  try {
+    await saveSettingsToFirebase({
+      siteConfig: nextData.siteConfig,
+      children: nextData.children,
+      categories: nextData.categories,
+    });
+  } catch (error) {
+    console.error("Không lưu được settings lên Firestore:", error);
+  }
+};
   const activeChild = useMemo(() => {
     const activeChildId = appData.siteConfig.activeChildId;
 
@@ -98,14 +138,20 @@ export function useAppData() {
   }, [appData.resources, activeChild]);
 
   const updateSiteConfig = (newConfig) => {
-    setAppData((prev) => ({
+  setAppData((prev) => {
+    const next = {
       ...prev,
       siteConfig: {
         ...prev.siteConfig,
         ...newConfig,
       },
-    }));
-  };
+    };
+
+    saveCloudSettings(next);
+
+    return next;
+  });
+};
 
   const createChild = (childData) => {
     const newChild = {
@@ -116,49 +162,52 @@ export function useAppData() {
       parentName: childData.parentName || "",
     };
 
-    setAppData((prev) => ({
-      ...prev,
-      children: [newChild, ...prev.children],
-    }));
+    setAppData((prev) => {
+  const next = {
+    ...prev,
+    children: [newChild, ...prev.children],
+  };
+
+  saveCloudSettings(next);
+
+  return next;
+});
 
     return newChild;
   };
 
-  const updateChild = (childId, childData) => {
-    setAppData((prev) => ({
+ const deleteChild = (childId) => {
+  setAppData((prev) => {
+    const children = prev.children.filter((child) => child.id !== childId);
+
+    const next = {
       ...prev,
-      children: prev.children.map((child) =>
-        child.id === childId ? { ...child, ...childData } : child
+      children,
+      resources: prev.resources.map((resource) =>
+        resource.childId === childId
+          ? {
+              ...resource,
+              targetType: "class",
+              childId: null,
+            }
+          : resource
       ),
-    }));
-  };
+      siteConfig: {
+        ...prev.siteConfig,
+        activeChildId:
+          prev.siteConfig.activeChildId === childId
+            ? children[0]?.id || ""
+            : prev.siteConfig.activeChildId,
+      },
+    };
 
-  const deleteChild = (childId) => {
-    setAppData((prev) => {
-      const children = prev.children.filter((child) => child.id !== childId);
+    saveCloudSettings(next);
 
-      return {
-        ...prev,
-        children,
-        resources: prev.resources.map((resource) =>
-          resource.childId === childId
-            ? {
-                ...resource,
-                targetType: "class",
-                childId: null,
-              }
-            : resource
-        ),
-        siteConfig: {
-          ...prev.siteConfig,
-          activeChildId:
-            prev.siteConfig.activeChildId === childId
-              ? children[0]?.id || ""
-              : prev.siteConfig.activeChildId,
-        },
-      };
-    });
-  };
+    return next;
+  });
+};
+
+  
 
   const createCategory = (categoryData) => {
     const newCategory = {
@@ -178,16 +227,23 @@ export function useAppData() {
       description: categoryData.description || "",
     };
 
-    setAppData((prev) => ({
-      ...prev,
-      categories: [newCategory, ...prev.categories],
-    }));
+    setAppData((prev) => {
+  const next = {
+    ...prev,
+    categories: [newCategory, ...prev.categories],
+  };
+
+  saveCloudSettings(next);
+
+  return next;
+});
 
     return newCategory;
   };
 
   const updateCategory = (categoryId, categoryData) => {
-    setAppData((prev) => ({
+  setAppData((prev) => {
+    const next = {
       ...prev,
       categories: prev.categories.map((category) =>
         category.id === categoryId
@@ -213,11 +269,16 @@ export function useAppData() {
             }
           : resource
       ),
-    }));
-  };
+    };
 
+    saveCloudSettings(next);
+
+    return next;
+  });
+};
   const deleteCategory = (categoryId) => {
-    setAppData((prev) => ({
+  setAppData((prev) => {
+    const next = {
       ...prev,
       categories: prev.categories.filter(
         (category) => category.id !== categoryId
@@ -231,8 +292,13 @@ export function useAppData() {
             }
           : resource
       ),
-    }));
-  };
+    };
+
+    saveCloudSettings(next);
+
+    return next;
+  });
+};
 
   const createResource = (resourceData) => {
     const category = appData.categories.find(
