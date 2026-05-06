@@ -175,7 +175,25 @@ const saveCloudSettings = async (nextData) => {
 
     return newChild;
   };
+const updateChild = (childId, childData) => {
+  setAppData((prev) => {
+    const next = {
+      ...prev,
+      children: prev.children.map((child) =>
+        child.id === childId
+          ? {
+              ...child,
+              ...childData,
+            }
+          : child
+      ),
+    };
 
+    saveCloudSettings(next);
+
+    return next;
+  });
+};
  const deleteChild = (childId) => {
   setAppData((prev) => {
     const children = prev.children.filter((child) => child.id !== childId);

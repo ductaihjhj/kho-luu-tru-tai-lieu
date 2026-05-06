@@ -167,7 +167,9 @@ const handleMarkNotificationsRead = async () => {
     color: item.color || "from-purple-200 to-pink-300",
     bgPattern: item.bgPattern || "bg-purple-50",
     size: item.size || "Link Drive",
-    teacher: item.teacher || "Cô giáo",
+    teacher: item.teacher || item.uploaderName || "Người đăng",
+uploaderName: item.uploaderName || item.teacher || "Người đăng",
+
     fileName: item.fileName || "",
     fileUrl: item.fileUrl || "#",
     thumbnailUrl: item.thumbnailUrl || "",
@@ -269,7 +271,8 @@ const unreadCount = allNotifications.filter((item) => !item.read).length;
       thumbnailUrl: uploadData.thumbnailUrl || "",
       size: uploadData.size || "Link Drive",
 
-      teacher: uploadData.teacher || "Cô giáo",
+      teacher: uploadData.teacher || uploadData.uploaderName || "Người đăng",
+uploaderName: uploadData.uploaderName || uploadData.teacher || "Người đăng",
       updatedAt: "Vừa xong",
       views: 0,
 

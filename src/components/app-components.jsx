@@ -1349,8 +1349,8 @@ const ResourceDetailModal = ({ resource, open, onClose }) => {
             </span>
 
             <span className="rounded-full bg-white/20 px-4 py-1.5 text-xs font-black text-white">
-              {resource.updatedAt || "Vừa xong"}
-            </span>
+  👤 {resource.uploaderName || resource.teacher || "Người đăng"}
+</span>
           </div>
         </div>
       </div>
@@ -1535,6 +1535,12 @@ export const ResourceCard = ({ resource, viewMode = "grid" }) => {
             <p className="text-xs text-gray-500 truncate">
               {resource.description || "Chưa có mô tả."}
             </p>
+            <div className="flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-500 w-fit">
+  <span>👤</span>
+  <span className="line-clamp-1">
+    {resource.uploaderName || resource.teacher || "Người đăng"}
+  </span>
+</div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1605,7 +1611,9 @@ export const ResourceCard = ({ resource, viewMode = "grid" }) => {
           <p className="text-xs text-gray-500 line-clamp-2 flex-1">
             {resource.description || "Chưa có mô tả."}
           </p>
-
+<p className="mt-1 text-[11px] font-bold text-purple-400 truncate">
+  👤 {resource.uploaderName || resource.teacher || "Người đăng"}
+</p>
           <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
             <span className="flex items-center gap-1">
               <i className="fas fa-clock text-purple-300"></i>
@@ -1705,6 +1713,7 @@ export const UploadModal = ({
   const [fileUrl, setFileUrl] = React.useState("");
   const [thumbnailUrl, setThumbnailUrl] = React.useState("");
   const [error, setError] = React.useState("");
+  const [uploaderName, setUploaderName] = React.useState("");
 
   const fileInputRef = React.useRef(null);
 
@@ -1718,6 +1727,7 @@ export const UploadModal = ({
   if (!open) return null;
 
   const resetForm = () => {
+    setUploaderName("");
     setDragging(false);
     setFileName("");
     setSelectedFile(null);
@@ -1767,7 +1777,10 @@ export const UploadModal = ({
       setError("Vui lòng nhập tiêu đề tài liệu.");
       return;
     }
-
+if (!uploaderName.trim()) {
+  setError("Vui lòng nhập tên người đăng tài liệu.");
+  return;
+}
     if (!fileUrl.trim()) {
       setError(
         "Vui lòng dán link file Google Drive. Chọn file ở máy chỉ lấy tên file, chưa lưu file thật."
@@ -1780,15 +1793,17 @@ export const UploadModal = ({
       setError("");
 
       await onSuccess("Đã thêm tài liệu thành công!", {
-        title: title.trim(),
-        category,
-        fileName: fileName || title.trim(),
-        fileUrl: fileUrl.trim(),
-        thumbnailUrl: thumbnailUrl.trim(),
-        size: selectedFile
-          ? `${Math.max(1, Math.round(selectedFile.size / 1024))} KB`
-          : "Link Drive",
-      });
+  title: title.trim(),
+  category,
+  fileName: fileName || title.trim(),
+  fileUrl: fileUrl.trim(),
+  thumbnailUrl: thumbnailUrl.trim(),
+  teacher: uploaderName.trim(),
+  uploaderName: uploaderName.trim(),
+  size: selectedFile
+    ? `${Math.max(1, Math.round(selectedFile.size / 1024))} KB`
+    : "Link Drive",
+});
 
       resetForm();
       onClose();
@@ -1845,7 +1860,18 @@ export const UploadModal = ({
                 className="w-full rounded-2xl border-2 border-purple-100 px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
               />
             </label>
+<label className="block">
+  <span className="mb-2 block text-sm font-black text-purple-600">
+    Tên người đăng
+  </span>
 
+  <input
+    value={uploaderName}
+    onChange={(event) => setUploaderName(event.target.value)}
+    placeholder="VD: Cô Mai, Phụ huynh bé Bảo Linh..."
+    className="w-full rounded-2xl border-2 border-purple-100 px-4 py-3 text-sm font-bold text-gray-700 outline-none transition focus:border-purple-400"
+  />
+</label>
             <label className="block">
               <span className="mb-2 block text-sm font-black text-purple-600">
                 Danh mục

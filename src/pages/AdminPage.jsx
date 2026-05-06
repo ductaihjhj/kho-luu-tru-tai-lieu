@@ -45,11 +45,12 @@ const EMPTY_RESOURCE_FORM = {
   type: "image",
   targetType: "class",
   childId: "",
-  teacher: "Cô giáo",
+  teacher: "",
+  uploaderName: "",
   fileName: "",
   fileUrl: "#",
-  size: "Mới tải",
   thumbnailUrl: "",
+  size: "Mới tải",
 };
 
 export default function AdminPage({
@@ -291,20 +292,26 @@ const handleSaveResource = async (event) => {
       categories.find((item) => item.id === resourceForm.categoryId) ||
       categories[0];
 
-    const payload = {
-      ...resourceForm,
-      categoryId: selectedCategory?.id || resourceForm.categoryId,
-      category: selectedCategory?.name || "",
-      type: selectedResourceType.value,
-      typeLabel: selectedResourceType.typeLabel,
-      emoji: selectedResourceType.emoji,
-      color: selectedResourceType.color,
-      bgPattern: selectedResourceType.bgPattern,
-      childId:
-        resourceForm.targetType === "child"
-          ? resourceForm.childId || activeChild?.id || ""
-          : null,
-    };
+    const uploaderName =
+  resourceForm.uploaderName?.trim() ||
+  resourceForm.teacher?.trim() ||
+  "Người đăng";
+
+const payload = {
+  ...resourceForm,
+
+  teacher: uploaderName,
+  uploaderName,
+
+  category: selectedCategory?.name || "Hoạt động của lớp",
+  typeLabel: typeMeta.typeLabel,
+  emoji: typeMeta.emoji,
+  color: typeMeta.color,
+  bgPattern: typeMeta.bgPattern,
+
+  fileUrl: resourceForm.fileUrl || "#",
+  thumbnailUrl: resourceForm.thumbnailUrl || "",
+};
 
     try {
   if (editingResourceId) {
@@ -317,10 +324,12 @@ const handleSaveResource = async (event) => {
 
   setEditingResourceId(null);
   setResourceForm({
-    ...EMPTY_RESOURCE_FORM,
-    categoryId: categories[0]?.id || "",
-    childId: activeChild?.id || "",
-  });
+  ...EMPTY_RESOURCE_FORM,
+  categoryId: categories[0]?.id || "",
+  childId: activeChild?.id || "",
+  teacher: "",
+  uploaderName: "",
+});
 } catch (error) {
   console.error(error);
   showMessage("Lưu tài liệu thất bại.");
@@ -328,10 +337,12 @@ const handleSaveResource = async (event) => {
 
     setEditingResourceId(null);
     setResourceForm({
-      ...EMPTY_RESOURCE_FORM,
-      categoryId: categories[0]?.id || "",
-      childId: activeChild?.id || "",
-    });
+  ...EMPTY_RESOURCE_FORM,
+  categoryId: categories[0]?.id || "",
+  childId: activeChild?.id || "",
+  teacher: "",
+  uploaderName: "",
+});
   };
 
   const handleEditResource = (resource) => {
@@ -339,27 +350,30 @@ const handleSaveResource = async (event) => {
     setActiveSection("resources");
 
     setResourceForm({
-      title: resource.title || "",
-      description: resource.description || "",
-      categoryId: resource.categoryId || categories[0]?.id || "",
-      type: resource.type || "image",
-      targetType: resource.targetType || "class",
-      childId: resource.childId || activeChild?.id || "",
-      teacher: resource.teacher || "Cô giáo",
-      fileName: resource.fileName || "",
-      fileUrl: resource.fileUrl || "#",
-      size: resource.size || "Mới tải",
-      thumbnailUrl: resource.thumbnailUrl || "",
-    });
+  title: resource.title || "",
+  description: resource.description || "",
+  categoryId: resource.categoryId || categories[0]?.id || "",
+  type: resource.type || "image",
+  targetType: resource.targetType || "class",
+  childId: resource.childId || activeChild?.id || "",
+  teacher: resource.teacher || resource.uploaderName || "",
+  uploaderName: resource.uploaderName || resource.teacher || "",
+  fileName: resource.fileName || "",
+  fileUrl: resource.fileUrl || "#",
+  thumbnailUrl: resource.thumbnailUrl || "",
+  size: resource.size || "Mới tải",
+});
   };
 
   const handleCancelResource = () => {
     setEditingResourceId(null);
     setResourceForm({
-      ...EMPTY_RESOURCE_FORM,
-      categoryId: categories[0]?.id || "",
-      childId: activeChild?.id || "",
-    });
+  ...EMPTY_RESOURCE_FORM,
+  categoryId: categories[0]?.id || "",
+  childId: activeChild?.id || "",
+  teacher: "",
+  uploaderName: "",
+});
   };
 
   const handleDeleteResource = async (resourceId) => {
@@ -916,7 +930,17 @@ function ResourcesSection({
               setResourceForm((prev) => ({ ...prev, title: value }))
             }
           />
-
+<AdminInput
+  label="Tên người đăng"
+  value={resourceForm.uploaderName || resourceForm.teacher || ""}
+  onChange={(value) =>
+    setResourceForm((prev) => ({
+      ...prev,
+      uploaderName: value,
+      teacher: value,
+    }))
+  }
+/>
           <AdminSelect
             label="Danh mục"
             value={resourceForm.categoryId}
