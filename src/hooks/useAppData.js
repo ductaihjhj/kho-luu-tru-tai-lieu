@@ -42,9 +42,13 @@ function mergeAppData(savedData) {
       ...(savedData.siteConfig || {}),
     },
 
-    children: mergeById(defaultAppData.children, savedData.children),
+    children: Array.isArray(savedData.children)
+      ? savedData.children
+      : defaultAppData.children,
 
-    categories: mergeById(defaultAppData.categories, savedData.categories),
+ categories: Array.isArray(savedData.categories)
+  ? savedData.categories
+  : defaultAppData.categories,
 
     resources: mergeById(defaultAppData.resources, savedData.resources),
 
@@ -91,11 +95,9 @@ useEffect(() => {
           ? cloudSettings.children
           : prev.children,
 
-      categories:
-        Array.isArray(cloudSettings.categories) &&
-        cloudSettings.categories.length > 0
-          ? cloudSettings.categories
-          : prev.categories,
+      categories: Array.isArray(cloudSettings.categories)
+  ? cloudSettings.categories
+  : prev.categories,
     }));
   });
 
@@ -263,6 +265,7 @@ const updateChild = (childId, childData) => {
   setAppData((prev) => {
     const next = {
       ...prev,
+
       categories: prev.categories.map((category) =>
         category.id === categoryId
           ? {
@@ -279,6 +282,7 @@ const updateChild = (childId, childData) => {
             }
           : category
       ),
+
       resources: prev.resources.map((resource) =>
         resource.categoryId === categoryId
           ? {
@@ -296,17 +300,22 @@ const updateChild = (childId, childData) => {
 };
   const deleteCategory = (categoryId) => {
   setAppData((prev) => {
+    const fallbackCategory =
+      prev.categories.find((category) => category.id !== categoryId) || null;
+
     const next = {
       ...prev,
+
       categories: prev.categories.filter(
         (category) => category.id !== categoryId
       ),
+
       resources: prev.resources.map((resource) =>
         resource.categoryId === categoryId
           ? {
               ...resource,
-              categoryId: "activity",
-              category: "Hoạt động của lớp",
+              categoryId: fallbackCategory?.id || "activity",
+              category: fallbackCategory?.name || "Chưa phân loại",
             }
           : resource
       ),

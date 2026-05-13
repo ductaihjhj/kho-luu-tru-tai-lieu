@@ -251,32 +251,5 @@ export const defaultAppData = {
   ],
 
   notifications: [
-    {
-      id: "notification-1",
-      icon: "💬",
-      text: "Cô giáo đã bình luận vào tranh của bé Bảo Linh",
-      time: "5 phút trước",
-      read: false,
-      color: "bg-pink-100",
-      childId: "bao-linh",
-    },
-    {
-      id: "notification-2",
-      icon: "🎵",
-      text: 'Thêm bài hát "Con cào cào" vào danh sách lớp',
-      time: "30 phút trước",
-      read: false,
-      color: "bg-purple-100",
-      childId: null,
-    },
-    {
-      id: "notification-3",
-      icon: "🎬",
-      text: "Có video mới trong hoạt động của lớp",
-      time: "2 giờ trước",
-      read: true,
-      color: "bg-sky-100",
-      childId: null,
-    },
   ],
 };

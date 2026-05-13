@@ -198,22 +198,6 @@ export const MOCK_DATA = {
       color: "bg-pink-100",
     },
     {
-      id: 2,
-      icon: "🎵",
-      text: 'Thêm bài hát "Con cào cào" vào danh sách lớp',
-      time: "30 phút trước",
-      read: false,
-      color: "bg-purple-100",
-    },
-    {
-      id: 3,
-      icon: "🎬",
-      text: "Có video mới trong hoạt động của lớp",
-      time: "2 giờ trước",
-      read: true,
-      color: "bg-sky-100",
-    },
-    {
       id: 4,
       icon: "📚",
       text: 'Cô giáo vừa thêm truyện "Rùa và Thỏ"',
@@ -2075,7 +2059,11 @@ export const ParentPanel = ({ onUpload, siteConfig }) => {
 // ============================================================
 // NOTIFICATION PANEL COMPONENT
 // ============================================================
-export const NotificationPanel = ({ notifications, onMarkRead }) => {
+export const NotificationPanel = ({
+  notifications,
+  onMarkRead,
+  onDeleteNotification,
+}) => {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
@@ -2118,47 +2106,45 @@ export const NotificationPanel = ({ notifications, onMarkRead }) => {
       </div>
 
       <div className="divide-y divide-purple-50">
-        {notifications.map((notif, i) => (
-          <div
-            key={notif.id}
-            className={cn(
-              "flex items-start gap-3 px-4 py-3.5 cursor-pointer hover:bg-purple-50/50 transition-all animate-fade-in-up",
-              !notif.read && "bg-purple-50/30",
-            )}
-            style={{ animationDelay: `${i * 0.08}s` }}
-          >
-            <div
-              className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm",
-                notif.color,
-              )}
-            >
-              {notif.icon}
-            </div>
+        {notifications.map((notification) => (
+  <div
+    key={notification.id}
+    className="group flex items-start gap-3 p-4 border-b border-purple-50"
+  >
+    <div
+      className={cn(
+        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl",
+        notification.color || "bg-purple-100"
+      )}
+    >
+      {notification.icon || "🔔"}
+    </div>
 
-            <div className="flex-1 min-w-0">
-              <p
-                className={cn(
-                  "text-xs leading-snug",
-                  !notif.read
-                    ? "font-bold text-gray-700"
-                    : "font-medium text-gray-500",
-                )}
-              >
-                {notif.text}
-              </p>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-bold text-gray-600 leading-snug">
+        {notification.text}
+      </p>
 
-              <div className="flex items-center gap-1.5 mt-1">
-                <i className="fas fa-clock text-gray-300 text-xs"></i>
-                <span className="text-xs text-gray-400">{notif.time}</span>
+      <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-gray-400">
+        <i className="fas fa-clock"></i>
+        <span>{notification.time || "Vừa xong"}</span>
 
-                {!notif.read && (
-                  <span className="ml-1 w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+        {!notification.read && (
+          <span className="h-2 w-2 rounded-full bg-purple-400"></span>
+        )}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => onDeleteNotification?.(notification.id)}
+      className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pink-50 text-xs font-black text-pink-400 opacity-100 transition hover:bg-pink-100 hover:text-pink-600"
+      title="Xoá thông báo"
+    >
+      ×
+    </button>
+  </div>
+))}
       </div>
 
       <div className="px-4 py-4 bg-gradient-to-b from-transparent to-purple-50/50">

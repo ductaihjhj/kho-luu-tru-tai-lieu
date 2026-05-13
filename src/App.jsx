@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import {
   markAllNotificationsReadInFirebase,
   subscribeNotificationsFromFirebase,
+    deleteNotificationsByResource,
+    deleteNotificationInFirebase,
 } from "./services/firebaseNotifications";
 import {
   createResourceInFirebase,
@@ -325,23 +327,45 @@ uploaderName: uploadData.uploaderName || uploadData.teacher || "Người đăng"
   };
 
   const handleAdminDeleteResource = async (resourceId) => {
-    try {
-      await deleteResourceFromFirebase(resourceId);
-    } catch (error) {
-      console.error(
-        "Không xoá được trên Firestore hoặc tài liệu không tồn tại:",
-        error
-      );
+  const resourceToDelete =
+    allResources.find((item) => item.id === resourceId) || null;
+
+  try {
+    if (resourceToDelete) {
+      await deleteNotificationsByResource(resourceToDelete);
     }
+  } catch (error) {
+    console.error("Không xoá được thông báo liên quan:", error);
+  }
 
-    setFirebaseResources((prev) =>
-      prev.filter((item) => item.id !== resourceId)
+  try {
+    await deleteResourceFromFirebase(resourceId);
+  } catch (error) {
+    console.error(
+      "Không xoá được trên Firestore hoặc tài liệu không tồn tại:",
+      error
     );
+  }
 
-    deleteResource(resourceId);
-    rememberDeletedResource(resourceId);
-  };
+  setFirebaseResources((prev) =>
+    prev.filter((item) => item.id !== resourceId)
+  );
 
+  deleteResource(resourceId);
+  rememberDeletedResource(resourceId);
+};
+
+const handleDeleteNotification = async (notificationId) => {
+  try {
+    await deleteNotificationInFirebase(notificationId);
+  } catch (error) {
+    console.error("Không xoá được thông báo:", error);
+  }
+
+  setFirebaseNotifications((prev) =>
+    prev.filter((item) => item.id !== notificationId)
+  );
+};
   const handleResetAllData = () => {
     localStorage.removeItem("deleted_resource_ids");
     setDeletedResourceIds([]);
@@ -373,6 +397,7 @@ uploaderName: uploadData.uploaderName || uploadData.teacher || "Người đăng"
               onViewResource={incrementResourceViews}
               mobileDrawerOpen={mobileDrawerOpen}
               setMobileDrawerOpen={setMobileDrawerOpen}
+              onDeleteNotification={handleDeleteNotification}
             />
           }
         />
@@ -446,6 +471,7 @@ function MainLayout({
   onViewResource,
   mobileDrawerOpen,
   setMobileDrawerOpen,
+  onDeleteNotification,  
 }) {
   return (
     <div className="min-h-screen bg-[#f8fbff]">
@@ -526,9 +552,10 @@ function MainLayout({
           />
 
           <NotificationPanel
-            notifications={notifications}
-            onMarkRead={onMarkRead}
-          />
+  notifications={notifications}
+  onMarkRead={onMarkRead}
+  onDeleteNotification={onDeleteNotification}
+/>
         </aside>
       </main>
     </div>

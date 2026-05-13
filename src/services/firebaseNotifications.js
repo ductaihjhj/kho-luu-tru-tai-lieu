@@ -1,11 +1,13 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
   orderBy,
   query,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
@@ -74,4 +76,50 @@ export async function markAllNotificationsReadInFirebase() {
       })
     )
   );
+}
+export async function deleteNotificationsByResource(resource = {}) {
+  const resourceId = resource.id || "";
+  const resourceTitle = resource.title || "";
+
+  const jobs = [];
+
+  if (resourceId) {
+    const qById = query(
+      collection(db, NOTIFICATIONS_COLLECTION),
+      where("resourceId", "==", resourceId)
+    );
+
+    jobs.push(getDocs(qById));
+  }
+
+  if (resourceTitle) {
+    const qByTitle = query(
+      collection(db, NOTIFICATIONS_COLLECTION),
+      where("resourceTitle", "==", resourceTitle)
+    );
+
+    jobs.push(getDocs(qByTitle));
+  }
+
+  const snapshots = await Promise.all(jobs);
+
+  const docsToDelete = new Map();
+
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item) => {
+      docsToDelete.set(item.id, item);
+    });
+  });
+
+  await Promise.all(
+    Array.from(docsToDelete.values()).map((item) =>
+      deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, item.id))
+    )
+  );
+}
+
+export async function deleteNotificationInFirebase(notificationId) {
+  if (!notificationId) return;
+
+  await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId));
 }
